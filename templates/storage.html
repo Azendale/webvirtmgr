@@ -90,7 +90,7 @@
                 <h3>{% trans "Images" %}</h3>
                 <hr>
                 {% ifnotequal state 0 %}
-                    <a href="#IsoUpload" class="btn btn-success" data-toggle="modal">{% trans "Upload ISO" %}</a><br>
+                    <button type="button" class="btn btn-success disk-image-upload">{% trans "Upload ISO" %}</button><br />
                     <br>
                 {% endifnotequal %}
 
@@ -135,7 +135,9 @@
                 <h3>{% trans "Volumes" %}</h3>
                 <hr>
                 {% ifnotequal state 0 %}
-                    <a href="#AddImage" class="btn btn-success" data-toggle="modal">{% trans "Add Image" %}</a><br><br>
+                    <a href="#AddImage" class="btn btn-success" data-toggle="modal">{% trans "Add Image" %}</a>
+                    <button type="button" class="btn btn-success disk-image-upload">{% trans "Upload Image" %}</button><br />
+                    <br />
                 {% endifnotequal %}
 
                 {% if volumes %}
@@ -308,15 +310,15 @@
     </div><!-- /.modal -->
 
     <!-- Modal Upload -->
-    <div class="modal fade" id="IsoUpload" tabindex="-1" role="dialog" aria-labelledby="IsoUploadLabel"
+    <div class="modal fade" id="ImageUpload" tabindex="-1" role="dialog" aria-labelledby="ImageUploadLabel"
          aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Upload ISO Image" %}</h4>
+                    <h4 class="modal-title">{% trans "Upload Disk Image" %}</h4>
                 </div>
-                <form class="form-horizontal" enctype="multipart/form-data" method="post" role="form">{% csrf_token %}
+                <form class="form-horizontal" enctype="multipart/form-data" method="post" role="form" id="image_upload_form">{% csrf_token %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Name" %}</label>
 
@@ -326,7 +328,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                        <button type="submit" class="btn btn-primary" name="iso_upload">{% trans "Upload" %}</button>
+                        <button type="submit" class="btn btn-primary" id="image_upload_button">{% trans "Upload" %}</button>
                     </div>
                 </form>
             </div>
@@ -355,6 +357,20 @@
             } else {
                 $('.meta-prealloc').hide();
             }
+        });
+        $(document).on('click', '.disk-image-upload', function () {
+            window.uploadObject = 
+                {
+                    'bytes_total': {{ size }},
+                    'bytes_used': {{ used }},
+                    'host_id': "{{ host_id }}",
+                    'storage': "{{ pool }}"
+                };
+            // Hash mark at end of URL to stop page from loading a second time if already open (thus interrupting uploads in progress
+            var uploadWindow = window.open("{% url 'storage_upload' %}#", 'webvirtmgrupload');
+            // Send it as a message in case the page was already open
+            // (otherwise, the page will retrieve it using window.opener.uploadObject
+            uploadWindow.postMessage(window.uploadObject, window.location.origin);
         });
         {% ifnotequal type 'dir' %}
             $('#image_format').hide();

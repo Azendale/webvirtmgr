@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% block title %}{% trans "Storage Pool Uploads" %}{% endblock %}
+{% block style %}
+    <link href="{% static "css/table-sort.css" %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    <div class="main col-xs-12 col-sm-9">
+        {% if errors %}
+            {% for error in errors %}
+                <div class="alert alert-danger">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    {{ error }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% if form.name.errors %}
+            <div class="alert alert-danger">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                {% for error in form.name.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        <table class="table table-hover" role="main">
+            <tbody id="upload-table-body">
+                <!-- add new ongoing uploads here with JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Upload -->
+    <div class="modal fade" id="ImageUpload" tabindex="-1" role="dialog" aria-labelledby="ImageUploadLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">{% trans "Upload Disk Image" %}</h4>
+                </div>
+                <form class="form-horizontal" enctype="multipart/form-data" method="post" role="form" id="id_image_upload_form">{% csrf_token %}
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+
+                        <div class="col-sm-6">
+                            <input type="file" name="file" id="id_file">
+                        </div>
+                        <input type="hidden" name="storage" id="id_storage" aria-hidden="true">
+                        <input type="hidden" name="host_id" id="id_host" aria-hidden="true">
+                        <input type="hidden" name="pool_used" id="id_pool_used" aria-hidden="true">
+                        <input type="hidden" name="pool_size" id="id_pool_size" aria-hidden="true">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                        <button type="submit" class="btn btn-primary" name="image_upload">{% trans "Upload" %}</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+{% endblock %}
+{% block script %}
+    <script>
+        function newUpload(uploadObject)
+        {
+            $('#id_storage').value = uploadObject['storage'];
+            $('#id_host').value = uploadObject['host_id'];
+            $('#id_pool_size').value = uploadObject['bytes_total'];
+            $('#id_pool_used').value = uploadObject['bytes_used'];
+            $('#ImageUpload').modal('show');
+            
+        }
+        
+        $(window).on('message', function (event) {
+            newUpload(event.originalEvent.data);
+        });
+        
+        $(document).ready(function (event) {
+            if (window.opener && window.opener.uploadObject)
+            {
+                newUpload(window.opener.uploadObject);
+            }
+        });
+    </script>
+    <script src="{% static "js/jquery.tablesorter.js" %}"></script>
+    <script>
+        $(function() {
+            $("#sortTable").tablesorter({
+                ignoreCase: true,
+                sortList: [[0,0]],
+                headers: {4: {sorter: false}},
+                textSorter: {1: $.tablesorter.sortText}
+            });
+        });
+    </script>
+{% endblock %}

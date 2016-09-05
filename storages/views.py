@@ -11,6 +11,8 @@ from vrtManager.storage import wvmStorage, wvmStorages
 
 from libvirt import libvirtError
 
+import pdb
+
 
 def storages(request, host_id):
     """
@@ -72,6 +74,7 @@ def storage(request, host_id, pool):
         return HttpResponseRedirect(reverse('login'))
 
     def handle_uploaded_file(path, f_name):
+        pdb.set_trace()
         target = path + '/' + str(f_name)
         destination = open(target, 'wb+')
         for chunk in f_name.chunks():
@@ -109,7 +112,7 @@ def storage(request, host_id, pool):
             volumes = None
     except libvirtError as err:
         errors.append(err)
-
+    
     if request.method == 'POST':
         if 'start' in request.POST:
             try:
@@ -191,3 +194,6 @@ def storage(request, host_id, pool):
     conn.close()
 
     return render_to_response('storage.html', locals(), context_instance=RequestContext(request))
+
+def storage_upload(request):
+    return render_to_response('storage_upload.html', locals(), context_instance=RequestContext(request))
