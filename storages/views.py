@@ -74,7 +74,6 @@ def storage(request, host_id, pool):
         return HttpResponseRedirect(reverse('login'))
 
     def handle_uploaded_file(path, f_name):
-        pdb.set_trace()
         target = path + '/' + str(f_name)
         destination = open(target, 'wb+')
         for chunk in f_name.chunks():

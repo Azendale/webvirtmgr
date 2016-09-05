@@ -308,34 +308,6 @@
         </div>
         <!-- /.modal-dialog -->
     </div><!-- /.modal -->
-
-    <!-- Modal Upload -->
-    <div class="modal fade" id="ImageUpload" tabindex="-1" role="dialog" aria-labelledby="ImageUploadLabel"
-         aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Upload Disk Image" %}</h4>
-                </div>
-                <form class="form-horizontal" enctype="multipart/form-data" method="post" role="form" id="image_upload_form">{% csrf_token %}
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-
-                        <div class="col-sm-6">
-                            <input type="file" name="file" id="id_file">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                        <button type="submit" class="btn btn-primary" id="image_upload_button">{% trans "Upload" %}</button>
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div><!-- /.modal -->
     {% include 'sidebar_close.html' %}
 {% endblock %}
 {% block script %}
