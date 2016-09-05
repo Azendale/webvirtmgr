@@ -64,25 +64,146 @@
 {% endblock %}
 {% block script %}
     <script>
+        window.uploadTasks = [];
+        window.totalUploadBytesToSend = 0;
+        
+        function addToWindowTotal(sentSoFar, toSend)
+        {
+            window.totalUploadBytesToSend = window.totalUploadBytesToSend + toSend;
+        }
+        
+        function removeFromWindowTotal(sentSoFar, toSend)
+        {
+            window.totalUploadBytesToSend = window.totalUploadBytesToSend - toSend;
+        }
+        
+        function updateWindowTotal()
+        {
+            var totalBytesSent = 0;
+            window.uploadTasks.forEach(function (item)
+            {
+                totalBytesSent = totalBytesSent + item['bytes_uploaded'];
+            });
+            if (window.totalBytesToSend != 0)
+            {
+                document.title = (totalBytesSent/window.totalUploadBytesToSend * 100).toString() + '% - {% trans "Storage Pool Uploads" %}';
+            }
+            else
+            {
+                document.title = '{% trans "Storage Pool Uploads" %}';
+            }
+        }
+        
+        function UploadTask(host_id, storage, xhr, bytes_total, filename)
+        {
+            var progressbar = document.createElement('progress');
+            progressbar.value = 0;
+            
+            var percentDiv = document.createElement('div');
+            var destDiv = document.createElement('div');
+            destDiv.innerHTML = host_id + '/' + storage + '/' + filename;
+            var statusDiv = document.createElement('div');
+            var uploadTaskRow = document.createElement('div');
+            uploadTaskRow.appendChild(progressbar);
+            uploadTaskRow.appendChild(percentDiv);
+            uploadTaskRow.appendChild(destDiv);
+            
+            returnob = {
+                'percentDiv': percentDiv,
+                'uploadTaskRow': uploadTaskRow,
+                'statusDiv': statusDiv,
+                'destDiv': destDiv,
+                'progressbar': progressbar,
+                'bytes_uploaded': 0,
+                'bytes_total': bytes_total,
+                'host_id': host_id,
+                'storage': storage,
+                'filename': filename,
+                'request': xhr,
+                'bytes_total': 1
+            }
+            
+            var updateProgress = function (e)
+            {
+                returnob['bytes_total'] = e.total;
+                returnob['progressbar'].value = e.loaded;
+                returnob['progressbar'].max = e.total;
+                returnob['percentDiv'].innerHTML = e.loaded / returnob['bytes_total'] * 100;
+                updateWindowTotal();
+            };
+            
+            var removeFromTotal = function ()
+            {
+                removeFromWindowTotal(returnob['bytes_uploaded'], returnob['bytes_total']);
+                updateWindowTotal();
+            };
+            
+            var addToTotal = function ()
+            {
+                addToWindowTotal(returnob['bytes_uploaded'], returnob['bytes_total']);
+                updateWindowTotal();
+            };
+            
+            
+            
+            returnob['updateProgress'] = updateProgress;
+            returnob['addToTotal'] = addToTotal;
+            returnob['removeFromTotal'] = removeFromTotal;
+            xhr.upload.addEventListener('progress', returnob.updateProgress);
+            return returnob;
+        }
+        
+        // Populate and show upload form
         function newUpload(uploadObject)
         {
-            $('#id_storage').value = uploadObject['storage'];
-            $('#id_host').value = uploadObject['host_id'];
-            $('#id_pool_size').value = uploadObject['bytes_total'];
-            $('#id_pool_used').value = uploadObject['bytes_used'];
+            $('#id_storage').val(uploadObject['storage']);
+            $('#id_host').val(uploadObject['host_id']);
+            $('#id_pool_size').val(uploadObject['bytes_total']);
+            $('#id_pool_used').val(uploadObject['bytes_used']);
             $('#ImageUpload').modal('show');
             
         }
         
+        // On a signal from another window show new upload form
         $(window).on('message', function (event) {
             newUpload(event.originalEvent.data);
         });
         
+        // On first window open, try to retrieve info and populate + show form
         $(document).ready(function (event) {
             if (window.opener && window.opener.uploadObject)
             {
                 newUpload(window.opener.uploadObject);
             }
+        });
+        
+        $('#id_image_upload_form').on('submit', function(event) {
+            //event.originalEvent.
+            //var csrf = $('#id_image_upload_form input[name="csrfmiddlewaretoken"]').val();
+            var storage = $('#id_storage').val();
+            var host = $('#id_host').val();
+            //var poolused = $('#id_pool_used').val();
+            //var poolsize = $('#id_pool_size').val();
+            //var fileinput = $('#id_file');
+            var file = $('#id_file')[0].files[0];
+            var filename = file.name;
+            var filesize = file.size;
+            
+            var xhr = new XMLHttpRequest();
+            var formData = new FormData($('#id_image_upload_form')[0]);
+            
+            var task = new UploadTask(host, storage, xhr, filesize, filename);
+            
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            $('#upload-table-body')[0].appendChild(tr);
+            tr.appendChild(td);
+            td.appendChild(task['uploadTaskRow']);
+            xhr.open('POST', "{% url 'storage' 0 'a' %}".slice(0, -4) + host + "/" +  storage + "/");
+            xhr.send(formData);
+            
+            
+            return false;
         });
     </script>
     <script src="{% static "js/jquery.tablesorter.js" %}"></script>
