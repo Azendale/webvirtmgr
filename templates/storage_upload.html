@@ -89,7 +89,7 @@
         {
             this.progressbar = document.createElement('progress');
             this.progressbar.value = 0;
-            this.progressbar.max = 1;
+            this.progressbar.max = bytes_total;
             
             this.percentDiv = document.createElement('div');
             this.destDiv = document.createElement('div');
@@ -143,13 +143,8 @@
         });
         
         $('#id_image_upload_form').on('submit', function(event) {
-            //event.originalEvent.
-            //var csrf = $('#id_image_upload_form input[name="csrfmiddlewaretoken"]').val();
             var storage = $('#id_storage').val();
             var host = $('#id_host').val();
-            //var poolused = $('#id_pool_used').val();
-            //var poolsize = $('#id_pool_size').val();
-            //var fileinput = $('#id_file');
             var file = $('#id_file')[0].files[0];
             var filename = file.name;
             var filesize = file.size;
@@ -171,7 +166,9 @@
             xhr.open('POST', "{% url 'storage' 0 'a' %}".slice(0, -4) + host + "/" +  storage + "/");
             xhr.send(formData);
             
+            $('#ImageUpload').modal('hide');
             
+            // Don't post the normal form
             return false;
         });
     </script>

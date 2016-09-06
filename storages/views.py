@@ -162,7 +162,7 @@ def storage(request, host_id, pool):
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as error_msg:
                 errors.append(error_msg.message)
-        if 'iso_upload' in request.POST:
+        if 'image_upload' in request.POST:
             if str(request.FILES['file']) in conn.update_volumes():
                 msg = _("ISO image already exist")
                 errors.append(msg)
