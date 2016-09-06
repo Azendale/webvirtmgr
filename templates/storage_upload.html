@@ -65,28 +65,19 @@
 {% block script %}
     <script>
         window.uploadTasks = [];
-        window.totalUploadBytesToSend = 0;
-        
-        function addToWindowTotal(sentSoFar, toSend)
-        {
-            window.totalUploadBytesToSend = window.totalUploadBytesToSend + toSend;
-        }
-        
-        function removeFromWindowTotal(sentSoFar, toSend)
-        {
-            window.totalUploadBytesToSend = window.totalUploadBytesToSend - toSend;
-        }
         
         function updateWindowTotal()
         {
             var totalBytesSent = 0;
+            var totalBytesToSend = 0;
             window.uploadTasks.forEach(function (item)
             {
-                totalBytesSent = totalBytesSent + item['bytes_uploaded'];
+                totalBytesSent = totalBytesSent + item.bytes_uploaded;
+                totalBytesToSend = totalBytesToSend + item.bytes_total;
             });
-            if (window.totalBytesToSend != 0)
+            if (totalBytesToSend != 0)
             {
-                document.title = (totalBytesSent/window.totalUploadBytesToSend * 100).toString() + '% - {% trans "Storage Pool Uploads" %}';
+                document.title = Math.round(totalBytesSent/totalBytesToSend * 100).toString() + '% - {% trans "Storage Pool Uploads" %}';
             }
             else
             {
@@ -94,65 +85,39 @@
             }
         }
         
-        function UploadTask(host_id, storage, xhr, bytes_total, filename)
+        var UploadTask = function (host_id, storage, xhr, bytes_total, filename)
         {
-            var progressbar = document.createElement('progress');
-            progressbar.value = 0;
+            this.progressbar = document.createElement('progress');
+            this.progressbar.value = 0;
+            this.progressbar.max = 1;
             
-            var percentDiv = document.createElement('div');
-            var destDiv = document.createElement('div');
-            destDiv.innerHTML = host_id + '/' + storage + '/' + filename;
-            var statusDiv = document.createElement('div');
-            var uploadTaskRow = document.createElement('div');
-            uploadTaskRow.appendChild(progressbar);
-            uploadTaskRow.appendChild(percentDiv);
-            uploadTaskRow.appendChild(destDiv);
+            this.percentDiv = document.createElement('div');
+            this.destDiv = document.createElement('div');
+            this.destDiv.innerHTML = host_id + '/' + storage + '/' + filename;
+            this.statusDiv = document.createElement('div');
+            this.uploadTaskRow = document.createElement('div');
+            this.uploadTaskRow.appendChild(this.progressbar);
+            this.uploadTaskRow.appendChild(this.percentDiv);
+            this.uploadTaskRow.appendChild(this.destDiv);
             
-            returnob = {
-                'percentDiv': percentDiv,
-                'uploadTaskRow': uploadTaskRow,
-                'statusDiv': statusDiv,
-                'destDiv': destDiv,
-                'progressbar': progressbar,
-                'bytes_uploaded': 0,
-                'bytes_total': bytes_total,
-                'host_id': host_id,
-                'storage': storage,
-                'filename': filename,
-                'request': xhr,
-                'bytes_total': 1
-            }
-            
-            var updateProgress = function (e)
-            {
-                returnob['bytes_total'] = e.total;
-                returnob['progressbar'].value = e.loaded;
-                returnob['progressbar'].max = e.total;
-                returnob['percentDiv'].innerHTML = e.loaded / returnob['bytes_total'] * 100;
-                updateWindowTotal();
-            };
-            
-            var removeFromTotal = function ()
-            {
-                removeFromWindowTotal(returnob['bytes_uploaded'], returnob['bytes_total']);
-                updateWindowTotal();
-            };
-            
-            var addToTotal = function ()
-            {
-                addToWindowTotal(returnob['bytes_uploaded'], returnob['bytes_total']);
-                updateWindowTotal();
-            };
-            
-            
-            
-            returnob['updateProgress'] = updateProgress;
-            returnob['addToTotal'] = addToTotal;
-            returnob['removeFromTotal'] = removeFromTotal;
-            xhr.upload.addEventListener('progress', returnob.updateProgress);
-            return returnob;
+            this.bytes_uploaded = 0;
+            this.bytes_total = bytes_total;
+            this.host_id = host_id;
+            this.storage = storage;
+            this.filename = filename;
+            this.request = xhr;
         }
-        
+            
+        UploadTask.prototype.updateProgress = function (e)
+        {
+            this.bytes_total = e.total;
+            this.bytes_uploaded = e.loaded;
+            this.progressbar.value = e.loaded;
+            this.progressbar.max = e.total;
+            this.percentDiv.innerHTML = Math.round(e.loaded / this.bytes_total * 100).toString() + "%";
+            updateWindowTotal();
+        };
+            
         // Populate and show upload form
         function newUpload(uploadObject)
         {
@@ -199,6 +164,10 @@
             $('#upload-table-body')[0].appendChild(tr);
             tr.appendChild(td);
             td.appendChild(task['uploadTaskRow']);
+            
+            window.uploadTasks.push(task);
+            
+            xhr.upload.addEventListener('progress', function (e) {task.updateProgress.call(task, e)});
             xhr.open('POST', "{% url 'storage' 0 'a' %}".slice(0, -4) + host + "/" +  storage + "/");
             xhr.send(formData);
             
